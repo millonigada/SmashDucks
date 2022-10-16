@@ -38,6 +38,9 @@ class _HomePageState extends State<HomePage> {
 
   List<ARNode> nodes = [];
   List<ARAnchor> anchors = [];
+  List<ARHitTestResult> hitTestResultsList = [];
+
+  double duckySmashCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -56,16 +59,33 @@ class _HomePageState extends State<HomePage> {
               ),
               Align(
                 alignment: FractionalOffset.bottomCenter,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ElevatedButton(
-                        onPressed: onRemoveEverything,
-                        child: Text("Remove Everything")
+                    Center(
+                      child: Text(
+                          "Smashed Ducks: ${duckySmashCount.round()}",
+                        style: TextStyle(
+                          color: colors.Colors.blue,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold
+                        ),
+                      ),
                     ),
-                    ElevatedButton(
-                        onPressed: onTakeScreenshot,
-                        child: const Text("Take Screenshot")
+                    SizedBox(height: 20,),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                            onPressed: onRemoveEverything,
+                            child: Text("Remove Everything")
+                        ),
+                        ElevatedButton(
+                            onPressed: onTakeScreenshot,
+                            child: const Text("Take Screenshot")
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -97,8 +117,14 @@ class _HomePageState extends State<HomePage> {
     );
     this.arObjectManager.onInitialize();
 
-    this.arSessionManager.onPlaneOrPointTap = onPlaneOrPointTapped;
+    this.arSessionManager.onPlaneOrPointTap = onPlaneTapped;
     this.arObjectManager.onNodeTap = onNodeTapped;
+
+    Timer(Duration(seconds: 7), (){
+      Timer.periodic(Duration(seconds: 2), (timer) {
+        onPlaneOrPointTapped(hitTestResultsList);
+      });
+    });
   }
 
   Future<void> onRemoveEverything() async {
@@ -137,6 +163,16 @@ class _HomePageState extends State<HomePage> {
           oldScale.y - 0.1,
           oldScale.z - 0.1
         );
+        setState(() {
+          duckySmashCount+=0.2;
+        });
+        debugPrint("Ducky smash count: ${duckySmashCount.round()}");
+        // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        //     content: Text("Smashed $duckySmashCount ducks"),
+        //     action: SnackBarAction(
+        //         label: 'HIDE',
+        //         onPressed:
+        //         ScaffoldMessenger.of(context).hideCurrentSnackBar)));
         if(newScale.x!=0){
           this.nodes[i].scale = newScale;
         } else {
@@ -149,12 +185,23 @@ class _HomePageState extends State<HomePage> {
         debugPrint("displaying nothing");
       }
     }
-    this.arSessionManager.onError("Tapped $number node(s)");
+    // this.arSessionManager.onError("Smashed ${duckySmashCount.round()} ducks");
+  }
+
+  Future<void> onPlaneTapped(List<ARHitTestResult> hitTestResults) async {
+    var singleHitTestResult = hitTestResults.firstWhere(
+            (hitTestResult) => hitTestResult.type == ARHitTestResultType.plane);
+    if (singleHitTestResult != null) {
+      this.hitTestResultsList.add(singleHitTestResult);
+      debugPrint("HIT TEST ADDED!!");
+    }
   }
 
   Future<void> onPlaneOrPointTapped(List<ARHitTestResult> hitTestResults) async {
-    var singleHitTestResult = hitTestResults.firstWhere(
-            (hitTestResult) => hitTestResult.type == ARHitTestResultType.plane);
+    int num = Random().nextInt(hitTestResults.length-1);
+    var singleHitTestResult = hitTestResults[num];
+    // var singleHitTestResult = hitTestResults.firstWhere(
+    //         (hitTestResult) => hitTestResult.type == ARHitTestResultType.plane);
     if (singleHitTestResult != null) {
       double distanceFromScreen = singleHitTestResult.distance;
 
@@ -188,10 +235,10 @@ class _HomePageState extends State<HomePage> {
           this.nodes.add(newNode);
 
         } else {
-          this.arSessionManager.onError("Adding Node to Anchor failed");
+          //this.arSessionManager.onError("Adding Node to Anchor failed");
         }
       } else {
-        this.arSessionManager.onError("Adding Anchor failed");
+        //this.arSessionManager.onError("Adding Anchor failed");
       }
       /*
       // To add a node to the tapped position without creating an anchor, use the following code (Please mind: the function onRemoveEverything has to be adapted accordingly!):
