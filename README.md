@@ -1,4 +1,4 @@
-# avr_mp
+# SmashTheDucks
 
 A new Flutter application.
 
